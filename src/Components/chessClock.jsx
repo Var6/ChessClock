@@ -1,32 +1,34 @@
-'use client'
-import React, { useState, useEffect } from "react";
+'use client';
 
-const ChessClock = () => {
-  const initialTime = 5 * 60; // 5 minutes
+import { useState, useEffect } from 'react';
+import { cn } from '@/utils/utils';
+import TimeSelectionModal from './TimeSelectionModel';
+
+
+const ChessClock = ({ initialTime }) => {
   const incrementTime = 1; // 1 second increment per move
 
-  const [timeControl, setTimeControl] = useState(initialTime); // Time control in seconds (default 5 minutes)
   const [playerOneTime, setPlayerOneTime] = useState(initialTime);
   const [playerTwoTime, setPlayerTwoTime] = useState(initialTime);
   const [timerRunning, setTimerRunning] = useState(null); // 'playerOne', 'playerTwo', or null
   const [paused, setPaused] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" + secs : secs}`;
+    return `${mins}:${secs < 10 ? '0' + secs : secs}`;
   };
 
-  // Check if time is under 10 seconds
-  const isLowTime = (time) => time < 100;
+  const isLowTime = (time) => time < 10;
 
   useEffect(() => {
     let interval;
     if (timerRunning && !paused) {
       interval = setInterval(() => {
-        if (timerRunning === "playerOne") {
+        if (timerRunning === 'playerOne') {
           setPlayerOneTime((prev) => Math.max(prev - 1, 0));
-        } else if (timerRunning === "playerTwo") {
+        } else if (timerRunning === 'playerTwo') {
           setPlayerTwoTime((prev) => Math.max(prev - 1, 0));
         }
       }, 1000);
@@ -37,83 +39,65 @@ const ChessClock = () => {
   }, [timerRunning, paused]);
 
   const handleStartStop = (player) => {
+    if (!timerRunning && player === 'playerOne') {
+      setTimerRunning('playerOne'); // White moves first
+      return;
+    }
     if (timerRunning === player) {
-      // Add time increment when stopping the clock
-      if (player === "playerOne") {
-        setPlayerOneTime((prev) => Math.min(prev + incrementTime, timeControl));
+      if (player === 'playerOne') {
+        setPlayerOneTime((prev) => Math.min(prev + incrementTime, initialTime));
       } else {
-        setPlayerTwoTime((prev) => Math.min(prev + incrementTime, timeControl));
+        setPlayerTwoTime((prev) => Math.min(prev + incrementTime, initialTime));
       }
-
-      // Switch to the other player's timer
-      setTimerRunning(player === "playerOne" ? "playerTwo" : "playerOne");
-    } else {
-      // Start the selected player's timer
-      setTimerRunning(player);
+      setTimerRunning(player === 'playerOne' ? 'playerTwo' : 'playerOne');
     }
   };
 
   const handlePause = () => {
-    setPaused((prev) => !prev); // Toggle pause state
+    setPaused((prev) => !prev);
   };
 
   const handleReset = () => {
-    setPlayerOneTime(timeControl);
-    setPlayerTwoTime(timeControl);
-    setTimerRunning(null); // Reset timers
-    setPaused(false); // Unpause if paused
+    setPlayerOneTime(initialTime);
+    setPlayerTwoTime(initialTime);
+    setTimerRunning(null);
+    setPaused(false);
   };
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex space-x-7">
+    <div className="flex flex-col items-center w-full h-screen p-4">
+      <div className="flex flex-col md:flex-row w-full h-full items-center justify-center border border-3 border-green-700 md:space-x-7">
         <div
-          onClick={() => timerRunning !== "playerTwo" && handleStartStop("playerOne")} // Disable click if it's not player one's time
-          className={`p-6 text-2xl font-bold rounded-lg cursor-pointer ${timerRunning === "playerOne" ? "bg-blue-500" : "bg-gray-300"} ${isLowTime(playerOneTime) ? "bg-red-700 animate-pulse" : ""}`}
+          onClick={() => timerRunning !== 'playerTwo' && handleStartStop('playerOne')}
+          className={`flex-col w-full md:w-1/4 p-6 text-2xl font-bold rounded-lg border border-3 border-green-700 cursor-pointer flex items-center h-1/2 justify-center ${timerRunning === 'playerOne' ? 'bg-blue-500' : 'bg-gray-300'} ${isLowTime(playerOneTime) ? 'bg-red-700 animate-pulse' : ''}`}
         >
+          <div className=" text-xl text-black">White</div>
           {formatTime(playerOneTime)}
-        <p className="text-center text-xl text-black mt-2">White</p>
+        </div>
+        <div className="flex space-x-4 my-4 md:my-0 md:flex-col md:space-y-4">
+          {timerRunning && (
+            <button onClick={handlePause} className="p-2 bg-yellow-500 text-white rounded">
+              {paused ? 'Resume' : 'Pause'}
+            </button>
+          )}
+          {!timerRunning && (
+            <button onClick={() => setShowModal(true)} className="p-2 bg-blue-600 text-white rounded">
+              Change Time Control
+            </button>
+          )}
+          <button onClick={handleReset} className="p-2 mx-auto bg-red-500 text-white rounded">
+            Resets
+          </button>
         </div>
         <div
-          onClick={() => timerRunning !== "playerOne" && handleStartStop("playerTwo")} // Disable click if it's not player two's time
-          className={`p-6 text-2xl font-bold rounded-lg cursor-pointer ${timerRunning === "playerTwo" ? "bg-blue-500 text-black " : "bg-gray-300"} ${isLowTime(playerTwoTime) ? "bg-red-700 animate-pulse" : ""}`}
+          onClick={() => timerRunning !== 'playerOne' && handleStartStop('playerTwo')}
+          className={`w-full flex-col h-1/2 md:w-1/2 max-w-md p-6 text-2xl font-bold rounded-lg cursor-pointer flex items-center justify-center ${timerRunning === 'playerTwo' ? 'bg-blue-500' : 'bg-gray-300'} ${isLowTime(playerTwoTime) ? 'bg-red-700 animate-pulse' : ''}`}
         >
+          <div className=" text-xl text-black">Black</div>
           {formatTime(playerTwoTime)}
-          <p className="text-center text-xl text-black mt-2">Black</p>
         </div>
       </div>
-
-      <div className="flex space-x-4 mt-4">
-        <button
-          onClick={handlePause}
-          className="p-2 bg-yellow-500 text-white rounded"
-        >
-          {paused ? "Resume" : "Pause"}
-        </button>
-        <select
-          onChange={(e) => {
-            setTimeControl(Number(e.target.value));
-            setPlayerOneTime(Number(e.target.value));
-            setPlayerTwoTime(Number(e.target.value));
-          }}
-          value={timeControl}
-          className="p-2 border border-gray-300 rounded"
-        >
-          <option value={300}>5 minutes</option>
-          <option value={600}>10 minutes</option>
-          <option value={900}>15 minutes</option>
-          <option value={180}>3 minutes</option>
-        </select>
-      </div>
-
-      <div className="mt-4">
-        <button
-          onClick={handleReset}
-          className="p-2 bg-red-500 text-white rounded"
-        >
-          Reset
-        </button>
-      </div>
+      {showModal && <TimeSelectionModal setTimeControl={(time) => { setPlayerOneTime(time); setPlayerTwoTime(time); setShowModal(false); }} setShowModal={setShowModal} />}
     </div>
   );
 };
